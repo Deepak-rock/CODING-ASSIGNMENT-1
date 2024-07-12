@@ -278,7 +278,6 @@ const checkRequestQuery = (request, response, next) => {
     }
   }
 
-<<<<<<< HEAD
   next();
 };
 
@@ -307,12 +306,10 @@ app.get('/agenda/', checkRequestQuery, async (request, response) => {
     console.error(`Error executing query: ${e.message}`); // Log the error
     response.status(400).send('Invalid Due Date');
   }
+  next()
 });
 
-=======
-  next()
-}
->>>>>>> 1e5eb79f94e2c533fca0c9943d827573a17c19a2
+ 
 //API 4
 app.post('/todos/', async (request, response) => {
   const {id, todo, priority, status, category, dueDate} = request.body
