@@ -3,7 +3,7 @@ const {open} = require('sqlite')
 const sqlite3 = require('sqlite3')
 const path = require('path')
 
-const { format, isValid, parseISO } = require('date-fns');
+const {format, isValid, parseISO, toDate} = require('date-fns')
 
 const app = express()
 app.use(express.json())
@@ -257,59 +257,30 @@ app.get('/todos/:todoId/', async (request, response) => {
 // API 3
 // Middleware to check and format date query
 const checkRequestQuery = (request, response, next) => {
-  const { date } = request.query;
+  const {date} = request.query
 
   if (date !== undefined) {
     try {
-      const parsedDate = parseISO(date); // Parses the date string in ISO format
-      const isValidDate = isValid(parsedDate);
+      const parsedDate = parseISO(date) // Parses the date string in ISO format
+      const isValidDate = isValid(parsedDate)
 
       if (isValidDate) {
-        request.query.date = format(parsedDate, 'yyyy-MM-dd'); // Correct format
-        console.log(`Parsed Date: ${parsedDate}`);
-        console.log(`Formatted Date: ${request.query.date}`);
+        request.query.date = format(parsedDate, 'yyyy-MM-dd') // Correct format
+        /* console.log(`Parsed Date: ${parsedDate}`)
+        console.log(`Formatted Date: ${request.query.date}`) */
       } else {
-        response.status(400).send('Invalid Due Date');
-        return;
+        response.status(400).send('Invalid Due Date')
+        return
       }
     } catch (e) {
-      response.status(400).send('Invalid Due Date');
-      return;
+      response.status(400).send('Invalid Due Date')
+      return
     }
   }
 
-  next();
-};
-
-// Route to get agenda
-app.get('/agenda/', checkRequestQuery, async (request, response) => {
-  const { date } = request.query;
-  console.log(`Received date query: ${date}`); // Log the date for debugging
-
-  try {
-    const getAgendaQuery = `
-      SELECT *
-      FROM todo
-      WHERE strftime('%Y-%m-%d', due_date) = '${date}';
-    `;
-    
-    console.log(`Executing query: ${getAgendaQuery}`); // Log the query for debugging
-
-    const selectTodoDate = await database.all(getAgendaQuery);
-
-    if (selectTodoDate.length === 0) {
-      console.log('No records found for the given date'); // Log if no records are found
-    }
-
-    response.send(selectTodoDate.map(eachItem => outPutResult(eachItem)));
-  } catch (e) {
-    console.error(`Error executing query: ${e.message}`); // Log the error
-    response.status(400).send('Invalid Due Date');
-  }
-});
-
-// API 4
-
+  next()
+}
+//API 4
 app.post('/todos/', async (request, response) => {
   const {id, todo, priority, status, category, dueDate} = request.body
 
@@ -336,8 +307,11 @@ app.post('/todos/', async (request, response) => {
   }
 
   try {
-    const formattedDate = format(new Date(dueDate), 'yyyy-MM-dd')
-    const isValidDate = isValid(toDate(formattedDate))
+    const parsedDate = parseISO(dueDate)
+    const isValidDate = isValid(parsedDate)
+
+    console.log(`parsedDate : ${parsedDate}`)
+    console.log(`isValidDate : ${isValidDate}`)
 
     if (!isValidDate) {
       response.status(400)
@@ -345,13 +319,16 @@ app.post('/todos/', async (request, response) => {
       return
     }
 
+    const formattedDate = format(parsedDate, 'yyyy-MM-dd')
+    console.log(`formattedDate : ${formattedDate}`)
+
     const postTodoQuery = `
       INSERT INTO todo (id, todo, priority, status, category, due_date)
       VALUES (
         '${id}', '${todo}', '${priority}', '${status}', '${category}', '${formattedDate}'
       );
     `
-    await database.run(postTodoQuery)
+    await db.run(postTodoQuery)
     response.send('Todo Successfully Added')
   } catch (e) {
     response.status(400)
@@ -389,8 +366,11 @@ app.put('/todos/:todoId/', async (request, response) => {
 
   if (dueDate !== undefined) {
     try {
-      const formattedDate = format(new Date(dueDate), 'yyyy-MM-dd')
-      const isValidDate = isValid(toDate(formattedDate))
+      const parsedDate = parseISO(dueDate)
+      const isValidDate = isValid(parsedDate)
+
+      console.log(`parsedDate : ${parsedDate}`)
+      console.log(`isValidDate : ${isValidDate}`)
 
       if (!isValidDate) {
         response.status(400)
@@ -398,6 +378,8 @@ app.put('/todos/:todoId/', async (request, response) => {
         return
       }
 
+      const formattedDate = format(parsedDate, 'yyyy-MM-dd')
+      console.log(`formattedDate : ${formattedDate}`)
       await database.run(`
         UPDATE todo
         SET due_date = '${formattedDate}'
