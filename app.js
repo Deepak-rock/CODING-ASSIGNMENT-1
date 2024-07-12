@@ -308,8 +308,7 @@ app.get('/agenda/', checkRequestQuery, async (request, response) => {
   }
 });
 
-// API 4
-
+//API 4
 app.post('/todos/', async (request, response) => {
   const {id, todo, priority, status, category, dueDate} = request.body
 
@@ -336,8 +335,11 @@ app.post('/todos/', async (request, response) => {
   }
 
   try {
-    const formattedDate = format(new Date(dueDate), 'yyyy-MM-dd')
-    const isValidDate = isValid(toDate(formattedDate))
+    const parsedDate = parseISO(dueDate)
+    const isValidDate = isValid(parsedDate)
+
+    console.log(`parsedDate : ${parsedDate}`)
+    console.log(`isValidDate : ${isValidDate}`)
 
     if (!isValidDate) {
       response.status(400)
@@ -345,13 +347,16 @@ app.post('/todos/', async (request, response) => {
       return
     }
 
+    const formattedDate = format(parsedDate, 'yyyy-MM-dd')
+    console.log(`formattedDate : ${formattedDate}`)
+
     const postTodoQuery = `
       INSERT INTO todo (id, todo, priority, status, category, due_date)
       VALUES (
         '${id}', '${todo}', '${priority}', '${status}', '${category}', '${formattedDate}'
       );
     `
-    await database.run(postTodoQuery)
+    await db.run(postTodoQuery)
     response.send('Todo Successfully Added')
   } catch (e) {
     response.status(400)
@@ -389,8 +394,11 @@ app.put('/todos/:todoId/', async (request, response) => {
 
   if (dueDate !== undefined) {
     try {
-      const formattedDate = format(new Date(dueDate), 'yyyy-MM-dd')
-      const isValidDate = isValid(toDate(formattedDate))
+      const parsedDate = parseISO(dueDate)
+      const isValidDate = isValid(parsedDate)
+
+      console.log(`parsedDate : ${parsedDate}`)
+      console.log(`isValidDate : ${isValidDate}`)
 
       if (!isValidDate) {
         response.status(400)
@@ -398,6 +406,8 @@ app.put('/todos/:todoId/', async (request, response) => {
         return
       }
 
+      const formattedDate = format(parsedDate, 'yyyy-MM-dd')
+      console.log(`formattedDate : ${formattedDate}`)
       await database.run(`
         UPDATE todo
         SET due_date = '${formattedDate}'
