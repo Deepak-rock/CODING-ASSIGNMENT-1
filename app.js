@@ -3,7 +3,7 @@ const {open} = require('sqlite')
 const sqlite3 = require('sqlite3')
 const path = require('path')
 
-const { format, isValid, parseISO } = require('date-fns');
+const {format, isValid, parseISO, toDate} = require('date-fns')
 
 const app = express()
 app.use(express.json())
@@ -257,27 +257,28 @@ app.get('/todos/:todoId/', async (request, response) => {
 // API 3
 // Middleware to check and format date query
 const checkRequestQuery = (request, response, next) => {
-  const { date } = request.query;
+  const {date} = request.query
 
   if (date !== undefined) {
     try {
-      const parsedDate = parseISO(date); // Parses the date string in ISO format
-      const isValidDate = isValid(parsedDate);
+      const parsedDate = parseISO(date) // Parses the date string in ISO format
+      const isValidDate = isValid(parsedDate)
 
       if (isValidDate) {
-        request.query.date = format(parsedDate, 'yyyy-MM-dd'); // Correct format
-        console.log(`Parsed Date: ${parsedDate}`);
-        console.log(`Formatted Date: ${request.query.date}`);
+        request.query.date = format(parsedDate, 'yyyy-MM-dd') // Correct format
+        /* console.log(`Parsed Date: ${parsedDate}`)
+        console.log(`Formatted Date: ${request.query.date}`) */
       } else {
-        response.status(400).send('Invalid Due Date');
-        return;
+        response.status(400).send('Invalid Due Date')
+        return
       }
     } catch (e) {
-      response.status(400).send('Invalid Due Date');
-      return;
+      response.status(400).send('Invalid Due Date')
+      return
     }
   }
 
+<<<<<<< HEAD
   next();
 };
 
@@ -308,6 +309,10 @@ app.get('/agenda/', checkRequestQuery, async (request, response) => {
   }
 });
 
+=======
+  next()
+}
+>>>>>>> 1e5eb79f94e2c533fca0c9943d827573a17c19a2
 //API 4
 app.post('/todos/', async (request, response) => {
   const {id, todo, priority, status, category, dueDate} = request.body
