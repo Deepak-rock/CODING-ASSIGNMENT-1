@@ -3,9 +3,7 @@ const {open} = require('sqlite')
 const sqlite3 = require('sqlite3')
 const path = require('path')
 
-const format = require('date-fns/format')
-const isValid = require('date-fns/isValid')
-const toDate = require('date-fns/toDate')
+const { format, isValid, parseISO } = require('date-fns');
 
 const app = express()
 app.use(express.json())
@@ -69,25 +67,23 @@ const checkRequestQuery = async (request, response, next) => {
 
   if (date !== undefined) {
     try {
-      const formattedDate = format(new Date(date), 'yyyy-MM-dd')
-      const result = toDate(formattedDate)
-      const isValidDate = isValid(result)
+      const parsedDate = parseISO(date); // Parses the date string in ISO format
+      const isValidDate = isValid(parsedDate);
 
       if (isValidDate) {
-        request.date = formattedDate
+        request.query.date = format(parsedDate, 'yyyy-mm-dd');
+        console.log(`Parsed Date: ${parsedDate}`)
       } else {
-        response.status(400)
-        response.send('Invalid Due Date')
-        return
+        response.status(400).send('Invalid Due Date');
+        return;
       }
     } catch (e) {
-      response.status(400)
-      response.send('Invalid Due Date')
-      return
+      response.status(400).send('Invalid Due Date');
+      return;
     }
   }
 
-  next()
+  next();
 }
 
 const outPutResult = dbObject => {
@@ -285,29 +281,20 @@ app.get('/todos/:todoId/', async (request, response) => {
 // API 3
 
 app.get('/agenda/', checkRequestQuery, async (request, response) => {
-  const {date} = request.query // Correctly read the date from query parameters
-
-  if (date === undefined) {
-    response.status(400)
-    response.send('Invalid Due Date')
-    return
-  }
-
-  try {
-    const formattedDate = format(new Date(date), 'yyyy-MM-dd')
-    const isValidDate = isValid(toDate(formattedDate))
-
-    if (!isValidDate) {
-      response.status(400)
-      response.send('Invalid Due Date')
-      return
-    }
-
+  const date = request.query
+  const formattedDate = parseISO(date);
+  console.log(`Formatted Date: ${formattedDate}`)
+  const getDateFormat = formattedDate.getDate()
+  console.log(getDateFormat)
+  console.log(`Received date query: ${date}`);
+  try{
     const getAgendaQuery = `
       SELECT *
       FROM todo
-      WHERE due_date = '${formattedDate}';
+      WHERE strftime('%Y-%m-%d',due_date) = '${date}';
     `
+    console.log(`Executing query: ${getAgendaQuery}`)
+
     const selectTodoDate = await database.all(getAgendaQuery)
 
     response.send(selectTodoDate.map(eachItem => outPutResult(eachItem)))
