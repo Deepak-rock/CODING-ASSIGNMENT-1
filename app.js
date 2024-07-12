@@ -62,30 +62,6 @@ const hasSearchProperty = requestQuery => {
   return requestQuery.search_q !== undefined
 }
 
-const checkRequestQuery = async (request, response, next) => {
-  const {date} = request.query
-
-  if (date !== undefined) {
-    try {
-      const parsedDate = parseISO(date); // Parses the date string in ISO format
-      const isValidDate = isValid(parsedDate);
-
-      if (isValidDate) {
-        request.query.date = format(parsedDate, 'yyyy-mm-dd');
-        console.log(`Parsed Date: ${parsedDate}`)
-      } else {
-        response.status(400).send('Invalid Due Date');
-        return;
-      }
-    } catch (e) {
-      response.status(400).send('Invalid Due Date');
-      return;
-    }
-  }
-
-  next();
-}
-
 const outPutResult = dbObject => {
   return {
     id: dbObject.id,
@@ -279,30 +255,58 @@ app.get('/todos/:todoId/', async (request, response) => {
 })
 
 // API 3
+// Middleware to check and format date query
+const checkRequestQuery = (request, response, next) => {
+  const { date } = request.query;
 
+  if (date !== undefined) {
+    try {
+      const parsedDate = parseISO(date); // Parses the date string in ISO format
+      const isValidDate = isValid(parsedDate);
+
+      if (isValidDate) {
+        request.query.date = format(parsedDate, 'yyyy-MM-dd'); // Correct format
+        console.log(`Parsed Date: ${parsedDate}`);
+        console.log(`Formatted Date: ${request.query.date}`);
+      } else {
+        response.status(400).send('Invalid Due Date');
+        return;
+      }
+    } catch (e) {
+      response.status(400).send('Invalid Due Date');
+      return;
+    }
+  }
+
+  next();
+};
+
+// Route to get agenda
 app.get('/agenda/', checkRequestQuery, async (request, response) => {
-  const date = request.query
-  const formattedDate = parseISO(date);
-  console.log(`Formatted Date: ${formattedDate}`)
-  const getDateFormat = formattedDate.getDate()
-  console.log(getDateFormat)
-  console.log(`Received date query: ${date}`);
-  try{
+  const { date } = request.query;
+  console.log(`Received date query: ${date}`); // Log the date for debugging
+
+  try {
     const getAgendaQuery = `
       SELECT *
       FROM todo
-      WHERE strftime('%Y-%m-%d',due_date) = '${date}';
-    `
-    console.log(`Executing query: ${getAgendaQuery}`)
+      WHERE strftime('%Y-%m-%d', due_date) = '${date}';
+    `;
+    
+    console.log(`Executing query: ${getAgendaQuery}`); // Log the query for debugging
 
-    const selectTodoDate = await database.all(getAgendaQuery)
+    const selectTodoDate = await database.all(getAgendaQuery);
 
-    response.send(selectTodoDate.map(eachItem => outPutResult(eachItem)))
+    if (selectTodoDate.length === 0) {
+      console.log('No records found for the given date'); // Log if no records are found
+    }
+
+    response.send(selectTodoDate.map(eachItem => outPutResult(eachItem)));
   } catch (e) {
-    response.status(400)
-    response.send('Invalid Due Date')
+    console.error(`Error executing query: ${e.message}`); // Log the error
+    response.status(400).send('Invalid Due Date');
   }
-})
+});
 
 // API 4
 
